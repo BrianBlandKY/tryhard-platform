@@ -1,2 +1,2 @@
-# tryhard-platform
-TryHard Platform
+# API
+Platform API / Content Management API 
