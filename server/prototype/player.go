@@ -1,15 +1,16 @@
 package prototype
 
 import (
-    "time"
+	"time"
 )
 
+// Player Interface
 type Player interface {
-    GetClient()        	Client
-    SetClient(Client)
-    GetStatus()		string
-    SetStatus(string)
-    // Username()      	string    	
-    // Type()		string		
-    DateCreated()   	time.Time   
+	Client() Client
+	SetClient(Client)
+	Status() string
+	SetStatus(string)
+	// Username()      	string
+	// Type()		    string
+	DateCreated() time.Time
 }

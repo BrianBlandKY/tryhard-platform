@@ -1,15 +1,16 @@
 package prototype
 
+// Party Interface
 type Party interface {
-    Code()              string
-    Status()            string
-    Write(msg Message)
-    Listen()
-    Reset()   
-    Broadcast(msg Message)
+	Code() string
+	Status() string
+	Write(msg Message)
+	Listen()
+	Reset()
+	Broadcast(msg Message)
 
-    // subject
-    // Add(c Client)
-    // Drop(c Client)
-    // Err(err error)
+	// subject
+	// Add(c Client)
+	// Drop(c Client)
+	// Err(err error)
 }

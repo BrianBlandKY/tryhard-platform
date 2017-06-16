@@ -1,139 +1,115 @@
-package socket
+package server
 
 import (
-	"time"
-	"log"
 	"fmt"
-)
-
-const (
-	PARTY_STATUS_OPENED     = "OPENED"
-	PARTY_STATUS_SUSPENDED  = "SUSPENDED"
-	PARTY_STATUS_STALE      = "STALE"
-	PARTY_STATUS_INGAME     = "IN-GAME"
-	PARTY_STATUS_CLOSED     = "CLOSED"
-	PARTY_NOT_AVAILABLE		= "PARTY_NOT_AVAILABLE"
-	PARTY_CONNECT  	      	= "PARTY_CONNECT"
-	PARTY_CONNECTED     	= "PARTY_CONNECTED"
-	PARTY_DISCONNECT  		= "PARTY_DISCONNECT"
-	PARTY_DISCONNECTED  	= "PARTY_DISCONNECTED"
-	PARTY_PLAYER_JOIN   	= "PARTY_PLAYER_JOIN"
-	PARTY_PLAYER_LEFT 		= "PARTY_PLAYER_LEFT"
+	"log"
+	"time"
 )
 
 type party struct {
-	server          *Server              
-	players         map[string]*player   
-	addCh           chan *message         
-	dropCh          chan *client         
-	doneCh          chan bool           
-	errCh           chan error        
-
-	// exports
-	Code       	    string      	`json:"code"`
-	Status          string         	`json:"status"`
-	DateCreated     time.Time      	`json:"date_created"`
+	server  *Server
+	players map[string]*player
+	addCh   chan *message
+	dropCh  chan *client
+	doneCh  chan bool
+	errCh   chan error
 }
+
 func (p *party) listen() {
 	for {
 		select {
-		case msg := <- p.addCh:
-			log.Printf("party %v added player %v \r\n", p.Code, msg.client.Id)
-			p.setPlayer(msg, PARTY_CONNECTED)
+		case msg := <-p.addCh:
+			log.Printf("party %v added player %v \r\n", p.Code, msg.client.ID)
+			p.setPlayer(msg, CONNECTED)
 			log.Println("Now", len(p.players), "players connected.")
 
 			playerList := ""
 
 			for _, player := range p.players {
-				playerList += fmt.Sprintf("player %v \r\n", player.client.Id)			
+				playerList += fmt.Sprintf("player %v \r\n", player.client.ID)
 			}
 
 			log.Println(playerList)
-			
-			player := p.players[msg.client.Id]
+
+			player := p.players[msg.client.ID]
 			msg.client.party = p
 
-			log.Println("sent PARTY_CONNECTED to client", msg.client.Id)
-			msg.client.write(playersMessage{
-				Command: PARTY_CONNECTED,
+			log.Println("sent PARTY_CONNECTED to client", msg.client.ID)
+			msg.client.write(message{
+				Command: CONNECTED,
 				Players: p.list(),
 			})
-			
+
 			p.broadcast(message{
-				client: msg.client,
-				Command: PARTY_PLAYER_JOIN,
-				Player: &playerMessage {
-					Id: msg.client.Id,
-					PartyCode: p.Code,
-					Username: player.Username,
-				},
+				client:    msg.client,
+				Command:   JOINED,
+				ID:        msg.client.ID,
+				PartyCode: p.Code,
+				Username:  player.Username,
 			})
 		case c := <-p.dropCh:
-			log.Printf("party %v dropped player %v", p.Code, c.Id)
-			
-			player := p.players[c.Id]
-			player.Status = PARTY_DISCONNECTED
+			log.Printf("party %v dropped player %v", p.Code, c.ID)
+
+			player := p.players[c.ID]
+			player.Status = DISCONNECTED
 
 			log.Println("Now", len(p.players), "players connected.")
 
 			playerList := ""
 
 			for _, player := range p.players {
-				playerList += fmt.Sprintf("player %v \r\n", player.client.Id)			
+				playerList += fmt.Sprintf("player %v \r\n", player.client.ID)
 			}
 
-			log.Println(playerList)			
+			log.Println(playerList)
 
 			c.write(message{
-				client: c,
-				Command: PARTY_DISCONNECTED,
+				client:  c,
+				Command: DISCONNECTED,
 			})
-			
+
 			p.broadcast(message{
-				client: c,
-				Command: PARTY_PLAYER_LEFT,
-				Player: &playerMessage {
-					Id: c.Id,
-					PartyCode: p.Code,
-					Username: player.Username,
-				},
+				client:    c,
+				ID:        c.ID,
+				PartyCode: p.Code,
+				Username:  player.Username,
 			})
-		case err := <- p.errCh:
+		case err := <-p.errCh:
 			log.Printf("Party %v error %v", p.Code, err)
 			p.server.err(err)
 		case <-p.doneCh:
 			log.Printf("Party %v stopped listening", p.Code)
 			// send party disconnect to all connected clients
 			p.broadcast(message{
-				client: nil,
-				Command: PARTY_DISCONNECTED,
+				client:  nil,
+				Command: DISCONNECTED,
 			})
 			return
 		}
-	}    
+	}
 }
-func (p *party) broadcast(msg message){
+func (p *party) broadcast(msg message) {
 	for _, player := range p.players {
-		player.client.write(msg)			
+		player.client.write(msg)
 	}
 }
 func (p *party) reset() {
-	p.Status = PARTY_STATUS_OPENED
+	p.Status = OPENED
 	p.players = make(map[string]*player)
 }
 func (p *party) write(msg *message) {
-	p.process(msg) 
+	p.process(msg)
 }
 func (p *party) process(msg *message) {
 	switch {
-		case msg.Command == PARTY_CONNECT:
-			p.add(msg)
-			break
-		case msg.Command == PARTY_DISCONNECT:
-			p.drop(msg.client)
-			break			
-		default:
-			break
+	case msg.Command == CONNECT:
+		p.add(msg)
+		break
+	case msg.Command == DISCONNECT:
+		p.drop(msg.client)
+		break
+	default:
+		break
 	}
 }
 func (p *party) add(c *message) {
@@ -145,38 +121,38 @@ func (p *party) drop(c *client) {
 func (p *party) err(err error) {
 	p.errCh <- err
 }
-func (p *party) list() ([]*player) {
+func (p *party) list() []*player {
 	list := make([]*player, len(p.players))
 	i := 0
 	for _, player := range p.players {
 		list[i] = player
-		i += 1
+		i++
 	}
 	return list
 }
 func (p *party) setPlayer(msg *message, status string) {
-	log.Println("party set player", status, msg.client.Id)
-	if x, ok := p.players[msg.client.Id]; ok {
-		x.client = msg.client 
+	log.Println("party set player", status, msg.client.ID)
+	if x, ok := p.players[msg.client.ID]; ok {
+		x.client = msg.client
 		x.Status = status
-		x.Id = msg.client.Id
-		x.Username = msg.Player.Username
+		x.ID = msg.client.ID
+		x.Username = msg.Username
 	} else {
-		p.players[msg.client.Id] = &player{
+		p.players[msg.client.ID] = &player{
 			msg.client,
-			msg.client.Id,
-			msg.Player.Username,
+			msg.client.ID,
+			msg.Username,
 			status,
 			time.Now(),
 		}
 	}
 }
 func newParty(code string, server *Server) *party {
-	players     := make(map[string]*player)
-	addCh       := make(chan *message)
-	dropCh      := make(chan *client)
-	doneCh      := make(chan bool)
-	errCh       := make(chan error)
+	players := make(map[string]*player)
+	addCh := make(chan *message)
+	dropCh := make(chan *client)
+	doneCh := make(chan bool)
+	errCh := make(chan error)
 
 	return &party{
 		server,
@@ -186,7 +162,7 @@ func newParty(code string, server *Server) *party {
 		doneCh,
 		errCh,
 		code,
-		PARTY_STATUS_OPENED,
+		OPENED,
 		time.Now(),
 	}
 }

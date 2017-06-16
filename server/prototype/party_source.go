@@ -1,6 +1,7 @@
 package prototype
 
+// PartySource Interface
 type PartySource interface {
-    Get(string) (Party)
-    Host(Server) (Party)
+	Generate(string) Party
+	Host(Server) Party
 }

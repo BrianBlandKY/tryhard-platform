@@ -1,9 +1,10 @@
 package prototype
 
+// Message Interface
 type Message interface {
-    GetClient()         Client
-    SetClient(Client)
-    Command()           string
-    PartyCode()         string  
-    Data()		[]byte
+	Client() Client
+	SetClient(Client)
+	Command() string
+	PartyCode() string
+	Data() []byte
 }

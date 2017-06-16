@@ -1,45 +1,53 @@
 package main
 
 import (
-    "log"
-    "bufio"
-    "os"
-    c "API/client"
+	"bufio"
+	"log"
+	"os"
+	c "tryhard-platform/client"
 )
 
-// func getLobbyCode() []interface{} {
-//     resp, err := http.Get("http://localhost:8080/lobby/gen")
-//     if err != nil {
-//         log.Fatal(err)
-//     }
-//     data, err := ioutil.ReadAll(resp.Body)
-//     if err != nil {
-//         log.Fatal(err)
-//     }
-//     resp.Body.Close()
-//     fmt.Printf("%s\r\n", data)
-//     return data
-// }
 func messageHandler() func(interface{}) {
-    return func(msg interface{}){
-        log.Printf("message handler %v \r\n", msg)
-    }
+	return func(msg interface{}) {
+		log.Printf("message handler %v \r\n", msg)
+	}
 }
 func main() {
-    //_ = getLobbyCode()
+	//_ = getLobbyCode()
 
-    client := c.NewClient(
-        "ws://localhost:8080/connect",
-        "http://localhost/",
-        messageHandler(),
-    )
-    client.Connect()
-    
-    // loop input
-    scanner := bufio.NewScanner(os.Stdin)
-    for scanner.Scan() {
-        data := scanner.Bytes()
-        log.Printf("data: %v", data)
-        client.Write(data)
-    }
+	log.Println("Client Tester Started")
+	log.Println("Enter command to get started...")
+
+	client := c.NewClient(
+		"ws://localhost:8181/connect",
+		"http://localhost/",
+		messageHandler(),
+	)
+
+	// loop input
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		command := scanner.Bytes()
+		log.Printf("command: %s", command)
+
+		switch cmd := string(command[:len(command)]); cmd {
+		case "connect":
+			log.Println("Connecting client...")
+			client.Connect()
+		case "close":
+			log.Println("Closing client...")
+			client.Close()
+		case "party":
+			log.Println("Generating a party...")
+			client.Party()
+		case "join":
+			log.Println("Joining a party...")
+			client.Join()
+		case "leave":
+			log.Println("Leaving party...")
+			client.Leave()
+		default:
+			client.Write(command)
+		}
+	}
 }
