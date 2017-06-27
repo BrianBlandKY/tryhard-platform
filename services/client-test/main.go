@@ -1,24 +1,122 @@
 package main
 
 import (
+	"bufio"
+	"fmt"
 	"log"
+	"os"
+
+	"time"
+	"tryhard-platform/data"
+
+	"encoding/json"
 
 	nats "github.com/nats-io/go-nats"
 )
 
-func basicUsage() {
-	nickelodeonServer := "nats://10.0.0.111:4222"
-	conn, err := nats.Connect(nickelodeonServer)
+type client struct {
+	nc *nats.Conn
+	ec *nats.EncodedConn
+}
+
+func (c *client) connect(url string) {
+	nc, err := nats.Connect(url)
 
 	if err != nil {
 		log.Panic(err)
 	}
 
+	ec, err := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	c.nc = nc
+	c.ec = ec
+
 	log.Println("Connected")
-	conn.Close()
-	log.Println("Disconnected")
+}
+
+func (c *client) join() {
+	log.Println("Joining party..")
+
+	partyMessage := data.PartyMessage{
+		Message: data.Message{
+			Command: data.JOIN,
+			Service: data.PARTY,
+		},
+		Party: data.Party{
+			Code: "TEST PARTY CODE",
+		},
+		Player: data.Player{
+			Username: "TEST PLAYER NAME",
+		},
+	}
+
+	rawMsg, err := json.Marshal(partyMessage)
+	if err != nil {
+		log.Println("error sending request", err)
+	}
+
+	log.Println("Raw message", rawMsg)
+	log.Println("Raw message (string)", string(rawMsg[:len(rawMsg)]))
+
+	response, err := c.nc.Request(data.PARTY, rawMsg, 50*time.Millisecond)
+	if err != nil {
+		log.Println("error sending request", err)
+	}
+
+	// do something with response
+	var resMsg data.PartyMessage
+	err = json.Unmarshal(response.Data, &resMsg)
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	log.Println("reply", resMsg)
+}
+
+func (c *client) leave() {
+	log.Println("Leaving party...")
+	// c.sendCh <- &nats.Msg{
+	// 	Data: []byte(`{
+	// 		"command": "LEAVE",
+	// 		"service": "PARTY",
+	// 		"party": {
+	// 			"code": "TEST_PARTY_CODE"
+	// 		},
+	// 		"player": {
+	// 			"username": "TEST_USERNAME"
+	// 		}
+	// 	}`),
+	// }
+}
+
+func (c *client) scan() {
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		command := scanner.Bytes()
+		log.Printf("command: %s \r\n", command)
+
+		switch cmd := string(command[:len(command)]); cmd {
+		case "join":
+			c.join()
+		case "leave":
+			c.leave()
+		default:
+			log.Printf("unrecognized command %s \r\n", cmd)
+		}
+	}
+}
+
+func newClient() *client {
+	return &client{}
 }
 
 func main() {
-	basicUsage()
+	c := newClient()
+
+	c.connect("nats://10.0.0.111:4222")
+
+	log.Println("Scanning...")
+	c.scan()
 }

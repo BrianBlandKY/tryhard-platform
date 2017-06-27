@@ -1,12 +1,24 @@
 package data
 
+// Services
+const (
+	// PARTY
+	PARTY = "PARTY"
+)
+
 // Commands
 const (
+	// COMMAND CONST
+	COMMAND = "COMMAND"
+
 	// HEARTBEAT CONST
 	HEARTBEAT = "HEARTBEAT"
 
 	// JOIN
 	JOIN = "JOIN"
+
+	// LEFT
+	LEFT = "LEFT"
 )
 
 // States

@@ -2,9 +2,10 @@ package data
 
 // Message Struct
 type Message struct {
-	Client  Client `json:"client"`
 	ID      string `json:"id"`
+	Client  Client `json:"client"`
 	Command string `json:"command"`
+	Service string `json:"service"`
 }
 
 // MessageAdapter Struct
