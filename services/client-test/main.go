@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
 
@@ -41,15 +40,15 @@ func (c *client) join() {
 	log.Println("Joining party..")
 
 	partyMessage := data.PartyMessage{
-		Message: data.Message{
-			Command: data.JOIN,
+		Command: data.Command{
+			Action:  data.JOIN,
 			Service: data.PARTY,
+			User: data.User{
+				Username: "TEST PLAYER NAME",
+			},
 		},
 		Party: data.Party{
-			Code: "TEST PARTY CODE",
-		},
-		Player: data.Player{
-			Username: "TEST PLAYER NAME",
+			Code: "TEST",
 		},
 	}
 
@@ -61,18 +60,31 @@ func (c *client) join() {
 	log.Println("Raw message", rawMsg)
 	log.Println("Raw message (string)", string(rawMsg[:len(rawMsg)]))
 
-	response, err := c.nc.Request(data.PARTY, rawMsg, 50*time.Millisecond)
+	response, err := c.nc.Request(data.PARTY, rawMsg, 1000*time.Millisecond)
 	if err != nil {
 		log.Println("error sending request", err)
 	}
 
+	subject := data.PARTY + partyMessage.Party.Code
+	log.Println("subject", subject)
+
+	// subscribe to all party messages
+	c.nc.Subscribe(subject, func(msg *nats.Msg) {
+		log.Println("Well, look who decided to join", string(msg.Data[:len(msg.Data)]))
+	})
+
+	log.Println("got response", response)
+
 	// do something with response
-	var resMsg data.PartyMessage
-	err = json.Unmarshal(response.Data, &resMsg)
-	if err != nil {
-		fmt.Println("error:", err)
+	// var resMsg data.PartyMessage
+	// err = json.Unmarshal(response.Data, &resMsg)
+	// if err != nil {
+	// 	fmt.Println("error:", err)
+	// }
+	// log.Println("reply", resMsg)
+
+	for {
 	}
-	log.Println("reply", resMsg)
 }
 
 func (c *client) leave() {

@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"log"
 
-	"time"
-
 	nats "github.com/nats-io/go-nats"
 )
 
@@ -16,6 +14,7 @@ type partyManager struct {
 	address string
 	nc      *nats.Conn
 	ec      *nats.EncodedConn
+	testCh  chan []byte
 }
 
 func (pm *partyManager) Connect() {
@@ -31,6 +30,19 @@ func (pm *partyManager) Connect() {
 	log.Println("Connected")
 }
 
+func (pm *partyManager) ListenTest() {
+	for {
+		select {
+		case msg := <-pm.testCh:
+			log.Println("test chan", msg)
+			err := pm.nc.Publish("PARTYTEST", msg)
+			if err != nil {
+				log.Println("error", err)
+			}
+		}
+	}
+}
+
 func (pm *partyManager) Listen() {
 	defer func() {
 		log.Println("Stopped Listening")
@@ -42,26 +54,47 @@ func (pm *partyManager) Listen() {
 		log.Println("Raw message (string)", string(rawMsg.Data[:len(rawMsg.Data)]))
 
 		// decoded message
-		var msg data.MessageAdapter
+		var msg data.Message
 		pm.decode(rawMsg.Data, &msg)
 		log.Println("decoded msg", msg)
 
-		if msg.Message.Command == data.JOIN {
+		if msg.Command.Action == data.JOIN {
 			var joinMsg data.PartyMessage
 			pm.decode(rawMsg.Data, &joinMsg)
 			log.Println("join msg", joinMsg)
 
 			// create Party
 			// data storage?
-
-			joinMsg.Party.DateCreated = time.Now()
 			// pull party status from source
 			// it may not always be in OPENED state.
 			joinMsg.Party.Status = data.OPENED
-			joinMsg.Player.DateCreated = time.Now()
-			joinMsg.Player.Status = data.CONNECTED
 
-			pm.ec.Publish(rawMsg.Reply, joinMsg)
+			repMsg, err := json.Marshal(joinMsg)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+
+			log.Println("rep msg", rawMsg.Reply, repMsg)
+
+			err = pm.nc.Publish(rawMsg.Reply, repMsg)
+			if err != nil {
+				fmt.Println("error:", err)
+			}
+
+			log.Println("sent reply", repMsg)
+
+			joinMsg.Action = data.JOINED
+			// broadcastMsg, err := json.Marshal(joinMsg)
+			// if err != nil {
+			// 	fmt.Println("error:", err)
+			// }
+
+			// emit connected player to party
+			// this breaks the req/rep for some reason
+			subject := data.PARTY + joinMsg.Party.Code
+			log.Println("emit message to party", subject)
+			pm.testCh <- []byte("TEST")
+			//pm.nc.Publish(subject, []byte("TEST BROADCAST"))
 		}
 	})
 
@@ -81,5 +114,6 @@ func (pm *partyManager) decode(msg []byte, output interface{}) {
 func NewPartyManager(address string) partyManager {
 	return partyManager{
 		address: address,
+		testCh:  make(chan []byte),
 	}
 }
