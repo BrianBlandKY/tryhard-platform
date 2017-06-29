@@ -15,24 +15,15 @@ import (
 
 type client struct {
 	nc *nats.Conn
-	ec *nats.EncodedConn
 }
 
 func (c *client) connect(url string) {
 	nc, err := nats.Connect(url)
-
-	if err != nil {
-		log.Panic(err)
-	}
-
-	ec, err := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	c.nc = nc
-	c.ec = ec
-
 	log.Println("Connected")
 }
 
@@ -60,19 +51,19 @@ func (c *client) join() {
 	log.Println("Raw message", rawMsg)
 	log.Println("Raw message (string)", string(rawMsg[:len(rawMsg)]))
 
-	response, err := c.nc.Request(data.PARTY, rawMsg, 1000*time.Millisecond)
-	if err != nil {
-		log.Println("error sending request", err)
-	}
-
 	subject := data.PARTY + partyMessage.Party.Code
-	log.Println("subject", subject)
 
 	// subscribe to all party messages
 	c.nc.Subscribe(subject, func(msg *nats.Msg) {
 		log.Println("Well, look who decided to join", string(msg.Data[:len(msg.Data)]))
 	})
 
+	response, err := c.nc.Request(data.PARTY, rawMsg, 1000*time.Millisecond)
+	if err != nil {
+		log.Println("error sending request", err)
+	}
+
+	log.Println("subject", subject)
 	log.Println("got response", response)
 
 	// do something with response

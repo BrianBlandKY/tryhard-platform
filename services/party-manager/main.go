@@ -28,7 +28,6 @@ func main() {
 
 	pm := NewPartyManager(nickelodeonServer)
 	pm.Connect()
-	go pm.ListenTest()
 	pm.Listen()
 	log.Println("Done.")
 }
