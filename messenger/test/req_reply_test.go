@@ -1,10 +1,9 @@
 package test
 
 import (
-	"encoding/gob"
 	"log"
 	"testing"
-	d "try-hard-platform/messenger"
+	d "tryhard-platform/messenger"
 )
 
 func TestRequestReply(t *testing.T) {
@@ -19,19 +18,11 @@ func TestRequestReply(t *testing.T) {
 
 	ch := make(chan bool)
 
-	type RndObject struct {
-		Random string
-	}
-
-	gob.Register(RndObject{})
-
-	_, err := nc1.Subscribe("test", func(subj, reply string, cmd d.Command) {
+	_, err := nc1.Subscribe("test", func(cmd d.Command) {
 		log.Printf("command received on nc1 %v", cmd)
-		cmd.Data = &RndObject{
-			"random object",
-		}
+		cmd.Data = []byte("RANDOM DATA")
 		log.Printf("sending reply to nc2 %v", cmd)
-		nc1.PublishRequestCommand(reply, cmd)
+		nc1.Reply(cmd)
 		ch <- true
 	})
 	if err != nil {
@@ -39,10 +30,10 @@ func TestRequestReply(t *testing.T) {
 	}
 
 	cmd := d.Command{
-		Subject: "test",
+		Service: "test",
 	}
 	var res d.Command
-	nc2.RequestCommand(cmd, &res)
+	nc2.Request(cmd, &res)
 
 	log.Printf("response: %v", res)
 

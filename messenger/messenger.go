@@ -1,27 +1,46 @@
 package messenger
 
-import "time"
+import (
+	"time"
+)
 
 const (
 	// DefaultTimeout limit set to 10 seconds
 	DefaultTimeout time.Duration = time.Second * 10
 )
 
-// CommandFn Command Handler
-type CommandFn func(subject, reply string, cmd Command)
+// Status for connection
+type Status int
 
-// Connect with default GOBEncoder
-func Connect(url string, id string) (conn Connection, err error) {
-	return ConnectEncoding(url, id, GOBEncoder)
+// Messenger Statuses
+const (
+	DISCONNECTED = Status(iota)
+	CONNECTED
+	CLOSED
+	RECONNECTING
+	CONNECTING
+	HEARTBEAT
+)
+
+// Messenger interface
+type Messenger interface {
+	Connect(url, id string) error
+	Publish(cmd Command) error
+	Request(cmd Command, response *Command) error
+	RequestTimeout(cmd Command, response *Command, timeout time.Duration) error
+	Reply(cmd Command) error
+	Subscribe(service string, cmdFn CommandFn) (Subscription, error)
+	SubscribeChan(key string, ch chan Command) (Subscription, error)
+	Close()
+	ID() string
+	Status() Status
+	IsConnected() bool
+	IsClosed() bool
 }
 
-// ConnectEncoding connect with specific encoder
-func ConnectEncoding(url string, id string, encoder string) (conn Connection, err error) {
-	n := &natsDialect{}
-	err = n.connect(url, id, encoder)
-	if err != nil {
-		return nil, err
-	}
+// CommandFn Command Handler
+type CommandFn func(cmd Command)
 
-	return n, nil
+func NewMessenger() Messenger {
+	return &natsDialect{}
 }

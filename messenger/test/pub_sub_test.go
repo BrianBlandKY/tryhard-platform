@@ -3,7 +3,7 @@ package test
 import (
 	"log"
 	"testing"
-	d "try-hard-platform/messenger"
+	d "tryhard-platform/messenger"
 )
 
 func TestPubSub(t *testing.T) {
@@ -14,7 +14,7 @@ func TestPubSub(t *testing.T) {
 	defer nc.Close()
 
 	ch := make(chan bool)
-	_, err := nc.Subscribe("test", func(subj, reply string, cmd d.Command) {
+	_, err := nc.Subscribe("test", func(cmd d.Command) {
 		log.Printf("command received %v", cmd)
 		ch <- true
 	})
@@ -24,10 +24,10 @@ func TestPubSub(t *testing.T) {
 	}
 
 	cmd := d.Command{
-		Subject: "test",
+		Service: "test",
 	}
 
-	err = nc.PublishCommand(cmd)
+	err = nc.Publish(cmd)
 	if err != nil {
 		t.Fatal(err)
 	}

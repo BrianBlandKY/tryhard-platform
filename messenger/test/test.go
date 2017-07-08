@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"time"
-	d "try-hard-platform/messenger"
+	d "tryhard-platform/messenger"
 
 	"github.com/nats-io/gnatsd/server"
 	gnatsd "github.com/nats-io/gnatsd/test"
@@ -41,19 +41,20 @@ func WaitTime(ch chan bool, timeout time.Duration) error {
 }
 
 // NewDefaultConnection
-func NewDefaultConnection(t tLogger) d.Connection {
+func NewDefaultConnection(t tLogger) d.Messenger {
 	return NewConnection(t, nats.DefaultPort)
 }
 
 // NewConnection forms connection on a given port.
-func NewConnection(t tLogger, port int) d.Connection {
+func NewConnection(t tLogger, port int) d.Messenger {
 	url := fmt.Sprintf("nats://localhost:%d", port)
-	nc, err := d.Connect(url, "test_client")
+	messenger := d.NewMessenger()
+	err := messenger.Connect(url, "test_client")
 	if err != nil {
 		t.Fatalf("Failed to create default connection: %v\n", err)
 		return nil
 	}
-	return nc
+	return messenger
 }
 
 // RunDefaultServer will run a server on the default port.

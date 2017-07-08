@@ -7,22 +7,39 @@ import (
 	nats "github.com/nats-io/go-nats"
 )
 
-const (
-	// JSONEncoder for Json encoded connection
-	JSONEncoder string = nats.JSON_ENCODER
-	GOBEncoder  string = nats.GOB_ENCODER
-)
-
 type natsDialect struct {
-	id  string
-	enc *nats.EncodedConn
+	id string
+	nc *nats.Conn
 }
 
-func (n *natsDialect) connect(url string, id string, encoding string) error {
+func messageFn(fn CommandFn) func(*nats.Msg) {
+	return func(m *nats.Msg) {
+		cmd := Command{
+			Service: m.Subject,
+			Reply:   m.Reply,
+			Data:    m.Data,
+		}
+		fn(cmd)
+	}
+}
+
+func (n *natsDialect) reconnected(conn *nats.Conn) {
+	log.Println("nats reconnected")
+}
+
+func (n *natsDialect) closed(conn *nats.Conn) {
+	log.Println("nats closed")
+}
+
+func (n *natsDialect) disconnected(conn *nats.Conn) {
+	log.Println("nats disconnected")
+}
+
+func (n *natsDialect) Connect(url string, id string) error {
 	opts := func(opt *nats.Options) error {
-		opt.ClosedCB = n.closed
-		opt.ReconnectedCB = n.reconnected
-		opt.DisconnectedCB = n.disconnected
+		// opt.ClosedCB = n.closed
+		// opt.ReconnectedCB = n.reconnected
+		// opt.DisconnectedCB = n.disconnected
 		opt.MaxReconnect = 5
 		opt.AllowReconnect = true
 		opt.Name = id
@@ -38,47 +55,37 @@ func (n *natsDialect) connect(url string, id string, encoding string) error {
 		return err
 	}
 
-	if len(encoding) == 0 {
-		panic("dialect encoder required.")
-	}
-
-	c, err := nats.NewEncodedConn(nc, encoding)
-	if err != nil {
-		return err
-	}
-	n.enc = c
+	n.nc = nc
 	return nil
 }
 
-func (n *natsDialect) reconnected(conn *nats.Conn) {
-	log.Println("nats reconnected")
+func (n *natsDialect) Publish(cmd Command) error {
+	return n.nc.Publish(cmd.Service, cmd.Data)
 }
 
-func (n *natsDialect) closed(conn *nats.Conn) {
-	log.Println("nats closed")
+func (n *natsDialect) Request(cmd Command, res *Command) error {
+	return n.RequestTimeout(cmd, res, DefaultTimeout)
 }
 
-func (n *natsDialect) disconnected(conn *nats.Conn) {
-	log.Println("nats disconnected")
+func (n *natsDialect) RequestTimeout(cmd Command, res *Command, timeout time.Duration) error {
+	response, err := n.nc.Request(cmd.Service, cmd.Data, timeout)
+	if err != nil {
+		return err
+	}
+	res = &Command{
+		Reply:   response.Reply,
+		Service: cmd.Service,
+		Data:    response.Data,
+	}
+	return nil
 }
 
-// dialect Connection interface
-func (n *natsDialect) Publish(subject string, cmd Command) error {
-	cmd.Subject = subject
-	return n.PublishCommand(cmd)
+func (n *natsDialect) Reply(cmd Command) error {
+	return n.nc.Publish(cmd.Reply, cmd.Data)
 }
 
-func (n *natsDialect) PublishCommand(cmd Command) error {
-	return n.enc.Publish(cmd.Subject, cmd)
-}
-
-func (n *natsDialect) PublishRequestCommand(reply string, cmd Command) error {
-	cmd.Reply = reply
-	return n.enc.Publish(cmd.Reply, cmd)
-}
-
-func (n *natsDialect) Subscribe(key string, cmdFn CommandFn) (Subscription, error) {
-	sub, err := n.enc.Subscribe(key, cmdFn)
+func (n *natsDialect) Subscribe(service string, cmdFn CommandFn) (Subscription, error) {
+	sub, err := n.nc.Subscribe(service, messageFn(cmdFn))
 	if err != nil {
 		return nil, err
 	}
@@ -88,24 +95,28 @@ func (n *natsDialect) Subscribe(key string, cmdFn CommandFn) (Subscription, erro
 	return s, err
 }
 
-func (n *natsDialect) RequestCommand(cmd Command, res *Command) {
-	n.Request(cmd.Subject, cmd, res)
-}
-
-func (n *natsDialect) Request(subject string, cmd Command, res *Command) {
-	n.RequestTimeout(subject, cmd, res, DefaultTimeout)
-}
-
-func (n *natsDialect) RequestTimeout(subject string, cmd Command, res *Command, timeout time.Duration) {
-	n.enc.Request(subject, cmd, res, timeout)
+func (n *natsDialect) SubscribeChan(key string, cmdCh chan Command) (Subscription, error) {
+	msgCh := make(chan *nats.Msg)
+	sub, err := n.nc.ChanSubscribe(key, msgCh)
+	if err != nil {
+		return nil, err
+	}
+	s := &natsSubscription{
+		sub:    sub,
+		msgch:  msgCh,
+		cmdCh:  cmdCh,
+		stopCh: make(chan bool),
+	}
+	go s.relayChan()
+	return s, err
 }
 
 func (n *natsDialect) Close() {
-	n.enc.Close()
+	n.nc.Close()
 }
 
 func (n *natsDialect) Status() Status {
-	switch s := n.enc.Conn.Status(); s {
+	switch s := n.nc.Status(); s {
 	case nats.DISCONNECTED:
 		return DISCONNECTED
 	case nats.CONNECTED:
@@ -125,20 +136,35 @@ func (n *natsDialect) ID() string {
 	return n.id
 }
 
-func (n *natsDialect) SetID(id string) {
-	n.id = id
-}
-
 func (n *natsDialect) IsConnected() bool {
-	return n.enc.Conn.IsConnected()
+	return n.nc.IsConnected()
 }
 
 func (n *natsDialect) IsClosed() bool {
-	return n.enc.Conn.IsClosed()
+	return n.nc.IsClosed()
 }
 
 type natsSubscription struct {
-	sub *nats.Subscription
+	sub    *nats.Subscription
+	msgch  chan *nats.Msg
+	cmdCh  chan Command
+	stopCh chan bool
+}
+
+func (s *natsSubscription) relayChan() {
+	for {
+		select {
+		case msg := <-s.msgch:
+			cmd := Command{
+				Service: msg.Subject,
+				Data:    msg.Data,
+				Reply:   msg.Reply,
+			}
+			s.cmdCh <- cmd
+		case _ = <-s.stopCh:
+			return
+		}
+	}
 }
 
 func (s *natsSubscription) Subject() string {
@@ -158,5 +184,8 @@ func (s *natsSubscription) AutoUnsubscribe(max int) error {
 }
 
 func (s *natsSubscription) Unsubscribe() error {
+	if s.stopCh != nil {
+		s.stopCh <- true
+	}
 	return s.sub.Unsubscribe()
 }

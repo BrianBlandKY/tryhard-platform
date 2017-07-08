@@ -1,9 +1,7 @@
-package schema
-
-import ()
+package model
 
 type Status struct {
-	Id 				string	`json:"_id"`
-	Status 			string  `json:"status"`
-	Description 	string	`json:"description"`
+	ID          string `json:"id"`
+	Value       string `json:"value"`
+	Description string `json:"description"`
 }

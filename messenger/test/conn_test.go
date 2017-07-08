@@ -2,13 +2,13 @@ package test
 
 import (
 	"testing"
-	d "try-hard-platform/messenger"
+	d "tryhard-platform/messenger"
 )
 
 func TestDefaultConnection(t *testing.T) {
 	s := RunDefaultServer()
 	defer s.Shutdown()
-	
+
 	nc := NewDefaultConnection(t)
 	defer nc.Close()
 }
