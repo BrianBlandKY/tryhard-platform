@@ -4,6 +4,8 @@ import (
 	"log"
 	"time"
 
+	"strings"
+
 	nats "github.com/nats-io/go-nats"
 )
 
@@ -33,6 +35,16 @@ func (n *natsDialect) closed(conn *nats.Conn) {
 
 func (n *natsDialect) disconnected(conn *nats.Conn) {
 	log.Println("nats disconnected")
+}
+
+func (n *natsDialect) Key(params ...string) (key string) {
+	return strings.Join(params, ".")
+}
+
+func (n *natsDialect) CommandKey(cmd Command, params ...string) (key string) {
+	keys := []string{cmd.Service, cmd.Action}
+	keys = append(keys, params...)
+	return strings.Join(keys, ".")
 }
 
 func (n *natsDialect) Connect(url string, id string) error {
@@ -67,25 +79,27 @@ func (n *natsDialect) Request(cmd Command, res *Command) error {
 	return n.RequestTimeout(cmd, res, DefaultTimeout)
 }
 
-func (n *natsDialect) RequestTimeout(cmd Command, res *Command, timeout time.Duration) error {
-	response, err := n.nc.Request(cmd.Service, cmd.Data, timeout)
+func (n *natsDialect) RequestTimeout(cmd Command, res *Command, timeout time.Duration) (err error) {
+	response, err := n.nc.Request(n.CommandKey(cmd), cmd.Data, timeout)
 	if err != nil {
 		return err
 	}
-	res = &Command{
-		Reply:   response.Reply,
-		Service: cmd.Service,
-		Data:    response.Data,
-	}
-	return nil
+
+	log.Printf("messenger request response %v  cmd: %v", response, cmd)
+	res.Reply = response.Reply
+	res.Service = cmd.Service
+	res.Data = response.Data
+
+	log.Println("messenger reply data", res)
+	return
 }
 
 func (n *natsDialect) Reply(cmd Command) error {
 	return n.nc.Publish(cmd.Reply, cmd.Data)
 }
 
-func (n *natsDialect) Subscribe(service string, cmdFn CommandFn) (Subscription, error) {
-	sub, err := n.nc.Subscribe(service, messageFn(cmdFn))
+func (n *natsDialect) Subscribe(key string, cmdFn CommandFn) (Subscription, error) {
+	sub, err := n.nc.Subscribe(key, messageFn(cmdFn))
 	if err != nil {
 		return nil, err
 	}
@@ -155,11 +169,24 @@ func (s *natsSubscription) relayChan() {
 	for {
 		select {
 		case msg := <-s.msgch:
-			cmd := Command{
-				Service: msg.Subject,
-				Data:    msg.Data,
-				Reply:   msg.Reply,
+			var cmd Command
+			cmds := strings.Split(msg.Subject, ".")
+			if len(cmds) > 1 {
+				cmd = Command{
+					Service: cmds[0],
+					Action:  cmds[1],
+					Data:    msg.Data,
+					Reply:   msg.Reply,
+				}
+			} else {
+				cmd = Command{
+					Service: cmds[0],
+					Action:  "",
+					Data:    msg.Data,
+					Reply:   msg.Reply,
+				}
 			}
+
 			s.cmdCh <- cmd
 		case _ = <-s.stopCh:
 			return

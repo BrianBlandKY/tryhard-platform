@@ -21,21 +21,37 @@ func (c *client) connect(url, id string) {
 
 func (c *client) join() {
 	cmd := mess.Command{
-		Service: model.PARTY,
-		Action:  model.JOIN,
-		Data:    []byte("TEST DATA"),
+		Service: mess.PARTY,
+		Action:  mess.JOIN,
 	}
+
+	cmd.Serialize(model.Party{
+		Code: "PARTY_CODE",
+		ID:   "TESTID",
+	})
+
 	var resCommand mess.Command
 	err := c.messenger.Request(cmd, &resCommand)
 	if err != nil {
 		panic(err)
 	}
-
-	log.Println("got a response", resCommand)
 }
 
 func (c *client) leave() {
+	cmd := mess.Command{
+		Service: mess.PARTY,
+		Action:  mess.DISBAND,
+	}
 
+	cmd.Serialize(model.Party{
+		Code: "PARTY_CODE",
+	})
+
+	var resCommand mess.Command
+	err := c.messenger.Request(cmd, &resCommand)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (c *client) scan() {
@@ -63,7 +79,6 @@ func newClient() *client {
 
 func main() {
 	c := newClient()
-
 	c.connect("nats://localhost:4222", "TEST_CLIENT")
 
 	log.Println("Scanning...")

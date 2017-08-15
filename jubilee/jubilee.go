@@ -2,80 +2,100 @@ package main
 
 import (
 	"fmt"
-	"tryhard-platform-old/data"
 	mess "tryhard-platform/messenger"
-	"tryhard-platform/model"
 
-	"encoding/json"
 	"log"
+	"tryhard-platform/model"
 )
 
 func main() {
 	nickelodeonServer := "nats://localhost:4222"
 
-	h := newCarnival(nickelodeonServer)
+	h := newJubilee(nickelodeonServer)
 	h.Connect()
 	h.Listen()
 	log.Println("Done.")
 }
 
 // Remove references to NATS
-type carnival struct {
+type jubilee struct {
 	address   string
 	messenger mess.Messenger
-	recvSub   mess.Subscription
-	recvChan  chan mess.Command
+	sub       mess.Subscription
+	subCh     chan mess.Command
 }
 
-func (c *carnival) Connect() {
-	c.messenger.Register(
-		model.Shindig{},
-	)
-
-	err := c.messenger.Connect(c.address, "CARNIVAL_ID")
+func (j *jubilee) Connect() {
+	err := j.messenger.Connect(j.address, "CARNIVAL_ID")
 	if err != nil {
 		panic(err)
 	}
 
-	c.bind()
+	j.subscribe()
 }
 
-func (c *carnival) bind() {
+func (j *jubilee) subscribe() {
 	ch := make(chan mess.Command)
-	recvSub, err := c.messenger.BindRecvChan(data.PARTY, ch)
+	key := j.messenger.Key(mess.PARTY, "*")
+	recvSub, err := j.messenger.SubscribeChan(key, ch)
 	if err != nil {
 		fmt.Printf("error creating channel %v", err)
 	}
 
-	c.recvSub = recvSub
-	c.recvChan = ch
+	j.sub = recvSub
+	j.subCh = ch
 }
 
-func (c *carnival) Listen() {
+func (j *jubilee) processAction(cmd mess.Command, party model.Party) (err error) {
+	switch cmd.Action {
+	case mess.JOIN:
+		j.join(cmd, party)
+	case mess.DISBAND:
+		j.disband(cmd, party)
+	default:
+		err = fmt.Errorf("invalid action %v", cmd.Action)
+	}
+	return
+}
+
+// JOIN
+func (j *jubilee) join(cmd mess.Command, party model.Party) {
+	j.messenger.Reply(cmd)
+}
+
+// DISBAND
+func (j *jubilee) disband(cmd mess.Command, party model.Party) {
+	j.messenger.Reply(cmd)
+}
+
+func (j *jubilee) Listen() {
 	log.Println("Listening")
 
 	for {
 		select {
-		case m := <-c.recvChan:
-			if m.Action == data.JOIN {
-				log.Println("received message", m)
-				c.messenger.Reply()
+		case m := <-j.subCh:
+			log.Println("received message", m)
+
+			var party model.Party
+			err := m.Deserialize(&party)
+			if err != nil {
+				log.Println("failed to deserialize message", err)
+				break
+			}
+
+			err = j.processAction(m, party)
+			if err != nil {
+				log.Printf("process error %v \n\r", err)
+				break
 			}
 		}
 	}
 }
 
-func (c *carnival) decode(msg []byte, output interface{}) {
-	err := json.Unmarshal(msg, output)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-}
-
-func newCarnival(address string) carnival {
-	c := carnival{
+func newJubilee(address string) (j jubilee) {
+	j = jubilee{
 		address:   address,
 		messenger: mess.NewMessenger(),
 	}
-	return c
+	return
 }

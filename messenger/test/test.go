@@ -73,3 +73,7 @@ func RunServerOnPort(port int) *server.Server {
 func RunServerWithOptions(opts server.Options) *server.Server {
 	return gnatsd.RunServer(&opts)
 }
+
+type TestObj struct {
+	Value string `json:"value"`
+}

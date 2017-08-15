@@ -6,6 +6,7 @@
 ### Interface
 
 #### Messenger
+- Key(cmd Command)
 - Connect(url, id string) error
 - Publish(command Command) error
 - Subscribe(key string, func(command Command)) (Subscription, error)

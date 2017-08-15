@@ -18,12 +18,27 @@ func TestChan(t *testing.T) {
 	nc1Chan := make(chan d.Command)
 	nc1.SubscribeChan("TEST", nc1Chan)
 
-	nc1.Publish(d.Command{
+	cmd := d.Command{
 		Service: "TEST",
-	})
+	}
 
+	valObj := TestObj{
+		Value: "Object Serialize",
+	}
+
+	cmd.Serialize(valObj)
+
+	nc1.Publish(cmd)
 	msg := <-nc1Chan
+
 	t.Log("received message", msg)
+
+	var testResult TestObj
+	msg.Deserialize(&testResult)
+
+	if testResult.Value != valObj.Value {
+		t.Fatal("Invalid incomplete transmission")
+	}
 
 	if msg.Service != "TEST" {
 		t.Fatal("Invalid command received")

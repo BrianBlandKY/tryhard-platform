@@ -9,21 +9,16 @@ const (
 	DefaultTimeout time.Duration = time.Second * 10
 )
 
+// CommandFn Command Handler
+type CommandFn func(cmd Command)
+
 // Status for connection
 type Status int
 
-// Messenger Statuses
-const (
-	DISCONNECTED = Status(iota)
-	CONNECTED
-	CLOSED
-	RECONNECTING
-	CONNECTING
-	HEARTBEAT
-)
-
 // Messenger interface
 type Messenger interface {
+	CommandKey(cmd Command, params ...string) string
+	Key(params ...string) string
 	Connect(url, id string) error
 	Publish(cmd Command) error
 	Request(cmd Command, response *Command) error
@@ -37,9 +32,6 @@ type Messenger interface {
 	IsConnected() bool
 	IsClosed() bool
 }
-
-// CommandFn Command Handler
-type CommandFn func(cmd Command)
 
 func NewMessenger() Messenger {
 	return &natsDialect{}

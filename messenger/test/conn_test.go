@@ -34,7 +34,3 @@ func TestConnectionStatus(t *testing.T) {
 		t.Fatal("Should have status set to CLOSED")
 	}
 }
-
-type TestObj struct {
-	Name int32
-}
