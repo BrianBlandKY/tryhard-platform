@@ -11,47 +11,47 @@ import (
 func main() {
 	nickelodeonServer := "nats://localhost:4222"
 
-	h := newJubilee(nickelodeonServer)
+	h := newCoordinator(nickelodeonServer)
 	h.Connect()
 	h.Listen()
 	log.Println("Done.")
 }
 
 // Remove references to NATS
-type jubilee struct {
+type coordinator struct {
 	address   string
 	messenger mess.Messenger
 	sub       mess.Subscription
 	subCh     chan mess.Command
 }
 
-func (j *jubilee) Connect() {
-	err := j.messenger.Connect(j.address, "CARNIVAL_ID")
+func (c *coordinator) Connect() {
+	err := c.messenger.Connect(c.address, "CARNIVAL_ID")
 	if err != nil {
 		panic(err)
 	}
 
-	j.subscribe()
+	c.subscribe()
 }
 
-func (j *jubilee) subscribe() {
+func (c *coordinator) subscribe() {
 	ch := make(chan mess.Command)
-	key := j.messenger.Key(mess.PARTY, "*")
-	recvSub, err := j.messenger.SubscribeChan(key, ch)
+	key := c.messenger.Key(mess.PARTY, "*")
+	recvSub, err := c.messenger.SubscribeChan(key, ch)
 	if err != nil {
 		fmt.Printf("error creating channel %v", err)
 	}
 
-	j.sub = recvSub
-	j.subCh = ch
+	c.sub = recvSub
+	c.subCh = ch
 }
 
-func (j *jubilee) processAction(cmd mess.Command, party model.Party) (err error) {
+func (c *coordinator) processAction(cmd mess.Command, party model.Party) (err error) {
 	switch cmd.Action {
 	case mess.JOIN:
-		j.join(cmd, party)
+		c.join(cmd, party)
 	case mess.DISBAND:
-		j.disband(cmd, party)
+		c.disband(cmd, party)
 	default:
 		err = fmt.Errorf("invalid action %v", cmd.Action)
 	}
@@ -59,21 +59,21 @@ func (j *jubilee) processAction(cmd mess.Command, party model.Party) (err error)
 }
 
 // JOIN
-func (j *jubilee) join(cmd mess.Command, party model.Party) {
-	j.messenger.Reply(cmd)
+func (c *coordinator) join(cmd mess.Command, party model.Party) {
+	c.messenger.Reply(cmd)
 }
 
 // DISBAND
-func (j *jubilee) disband(cmd mess.Command, party model.Party) {
-	j.messenger.Reply(cmd)
+func (c *coordinator) disband(cmd mess.Command, party model.Party) {
+	c.messenger.Reply(cmd)
 }
 
-func (j *jubilee) Listen() {
+func (c *coordinator) Listen() {
 	log.Println("Listening")
 
 	for {
 		select {
-		case m := <-j.subCh:
+		case m := <-c.subCh:
 			log.Println("received message", m)
 
 			var party model.Party
@@ -83,7 +83,7 @@ func (j *jubilee) Listen() {
 				break
 			}
 
-			err = j.processAction(m, party)
+			err = c.processAction(m, party)
 			if err != nil {
 				log.Printf("process error %v \n\r", err)
 				break
@@ -92,8 +92,8 @@ func (j *jubilee) Listen() {
 	}
 }
 
-func newJubilee(address string) (j jubilee) {
-	j = jubilee{
+func newCoordinator(address string) (c coordinator) {
+	c = coordinator{
 		address:   address,
 		messenger: mess.NewMessenger(),
 	}
