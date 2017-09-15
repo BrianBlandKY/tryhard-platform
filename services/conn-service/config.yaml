@@ -1,0 +1,5 @@
+service:
+  name: CONNECTION
+  id: DEV_CONNECTION_SERVICE
+platform:
+  address: nats://localhost:4222

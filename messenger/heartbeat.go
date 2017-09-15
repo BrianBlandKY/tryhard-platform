@@ -6,7 +6,9 @@ import (
 
 // Heartbeat Model
 type Heartbeat struct {
-	LatencyTime    time.Time    // timestamp
-	LatencySeconds int          // seconds
-	Interval       *time.Ticker // interval between heartbeat requests
+	NodeStartTime       time.Time // Node Start Time
+	NodeEndTime         time.Time // Node End Time
+	ServiceReceivedTime time.Time // Service Received Time
+	UploadLatency       float64   // Upload Latency MS
+	DownloadLatency     float64   // Download Latency MS
 }

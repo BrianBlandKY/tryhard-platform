@@ -1,0 +1,5 @@
+service:
+  name: PARTY
+  id: DEV_PARTY_SERVICE
+platform:
+  address: nats://localhost:4222

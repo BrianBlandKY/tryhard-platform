@@ -1,11 +1,9 @@
 package model
 
 type Player struct {
-	ID          string `json:"id"`
-	DeviceID    string `json:"device_id"`
-	Alias       string `json:"alias"`
-	Status      Status `json:"status"`
-	Signature   string `json:"signature"`
+	ID    string `json:"id"`
+	Alias string `json:"alias"`
+	//Status      mess.Status `json:"status"`
 	DateCreated string `json:"date_created"`
 	DateUpdated string `json:"date_updated"`
 }

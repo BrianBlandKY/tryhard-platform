@@ -19,20 +19,23 @@ type Status int
 type Messenger interface {
 	CommandKey(cmd Command, params ...string) string
 	Key(params ...string) string
-	Connect(url, id string) error
+	Connect(url string) error
+	Close()
 	Publish(cmd Command) error
 	Request(cmd Command, response *Command) error
 	RequestTimeout(cmd Command, response *Command, timeout time.Duration) error
 	Reply(cmd Command) error
 	Subscribe(service string, cmdFn CommandFn) (Subscription, error)
 	SubscribeChan(key string, ch chan Command) (Subscription, error)
-	Close()
-	ID() string
 	Status() Status
 	IsConnected() bool
 	IsClosed() bool
 }
 
-func NewMessenger() Messenger {
+func defaultMessenger() Messenger {
+	Services = PlatformServices{
+		Connection: "CONNECTION",
+		Party:      "PARTY",
+	}
 	return &natsDialect{}
 }

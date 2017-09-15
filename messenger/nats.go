@@ -10,8 +10,9 @@ import (
 )
 
 type natsDialect struct {
-	id string
-	nc *nats.Conn
+	id     string
+	doneCh chan bool
+	nc     *nats.Conn
 }
 
 func messageFn(fn CommandFn) func(*nats.Msg) {
@@ -37,6 +38,32 @@ func (n *natsDialect) disconnected(conn *nats.Conn) {
 	log.Println("nats disconnected")
 }
 
+func (n *natsDialect) Connect(url string) error {
+	opts := func(opt *nats.Options) error {
+		opt.ClosedCB = n.closed
+		opt.ReconnectedCB = n.reconnected
+		opt.DisconnectedCB = n.disconnected
+		opt.MaxReconnect = 5
+		opt.AllowReconnect = true
+		opt.ReconnectWait = 10 * time.Second
+		opt.Timeout = 30 * time.Second
+		opt.PingInterval = 5 * time.Second
+		opt.MaxPingsOut = 5
+		return nil
+	}
+	nc, err := nats.Connect(url, opts)
+	if err != nil {
+		return err
+	}
+	n.nc = nc
+
+	return nil
+}
+
+func (n *natsDialect) Close() {
+	n.nc.Close()
+}
+
 func (n *natsDialect) Key(params ...string) (key string) {
 	return strings.Join(params, ".")
 }
@@ -45,30 +72,6 @@ func (n *natsDialect) CommandKey(cmd Command, params ...string) (key string) {
 	keys := []string{cmd.Service, cmd.Action}
 	keys = append(keys, params...)
 	return strings.Join(keys, ".")
-}
-
-func (n *natsDialect) Connect(url string, id string) error {
-	opts := func(opt *nats.Options) error {
-		// opt.ClosedCB = n.closed
-		// opt.ReconnectedCB = n.reconnected
-		// opt.DisconnectedCB = n.disconnected
-		opt.MaxReconnect = 5
-		opt.AllowReconnect = true
-		opt.Name = id
-		opt.ReconnectWait = 10 * time.Second
-		opt.Timeout = 30 * time.Second
-		opt.PingInterval = 5 * time.Second
-		opt.MaxPingsOut = 5
-		return nil
-	}
-	n.id = id
-	nc, err := nats.Connect(url, opts)
-	if err != nil {
-		return err
-	}
-
-	n.nc = nc
-	return nil
 }
 
 func (n *natsDialect) Publish(cmd Command) error {
@@ -85,12 +88,12 @@ func (n *natsDialect) RequestTimeout(cmd Command, res *Command, timeout time.Dur
 		return err
 	}
 
-	log.Printf("messenger request response %v  cmd: %v", response, cmd)
+	//log.Printf("messenger request response %v  cmd: %v", response, cmd)
 	res.Reply = response.Reply
 	res.Service = cmd.Service
 	res.Data = response.Data
 
-	log.Println("messenger reply data", res)
+	//log.Println("messenger reply data", res)
 	return
 }
 
@@ -125,10 +128,6 @@ func (n *natsDialect) SubscribeChan(key string, cmdCh chan Command) (Subscriptio
 	return s, err
 }
 
-func (n *natsDialect) Close() {
-	n.nc.Close()
-}
-
 func (n *natsDialect) Status() Status {
 	switch s := n.nc.Status(); s {
 	case nats.DISCONNECTED:
@@ -144,10 +143,6 @@ func (n *natsDialect) Status() Status {
 	default:
 		return DISCONNECTED
 	}
-}
-
-func (n *natsDialect) ID() string {
-	return n.id
 }
 
 func (n *natsDialect) IsConnected() bool {

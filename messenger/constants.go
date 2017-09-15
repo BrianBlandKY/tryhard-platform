@@ -1,33 +1,25 @@
 package messenger
 
-// Constants
+// Messenger Status
+// Not to be used in Commands
 const (
 	DISCONNECTED = Status(iota)
 	CONNECTED
 	CLOSED
 	RECONNECTING
 	CONNECTING
-	HEARTBEAT
 )
 
-// Deprecate constants below
+// PlatformServices Struct
+type PlatformServices struct {
+	Connection string
+	Party      string
+}
 
-// Services
-const (
-	// PARTY
-	PARTY = "PARTY"
-)
+// Services - Defined on initiation.
+var Services PlatformServices
 
-// Commands
-const (
-	// JOIN
-	JOIN = "JOIN"
-
-	// DISBAND
-	DISBAND = "DISBAND"
-)
-
-// States
+// Party States
 const (
 	// OPENED State
 	OPENED = "OPENED"
@@ -53,12 +45,24 @@ const (
 
 // Actions
 const (
-	// ERROR STATE
-	ERROR = "ERROR"
-
 	// CONNECT State
 	CONNECT = "CONNECT"
 
 	// DISCONENECT State
 	DISCONNECT = "DISCONNECT"
+
+	// TIMEOUT State
+	TIMEOUT = "TIMEOUT"
+
+	// HEARTBEAT State
+	HEARTBEAT = "HEARTBEAT"
+
+	// JOIN State
+	JOIN = "JOIN"
+
+	// DISBAND State
+	DISBAND = "DISBAND"
+
+	// ERROR State
+	ERROR = "ERROR"
 )
