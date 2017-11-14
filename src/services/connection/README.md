@@ -1,0 +1,2 @@
+# Deprecated Service
+The intention was for this to track the connection status of all services (including itself). But, this lead to multiple redundancy and unneccessary complexity. For example, we were sending custom heartbeats to all services when ping/pong is already  managed between the gnatsd server and the clients. Similar for connection status. This is already known via the client + gnatsd.

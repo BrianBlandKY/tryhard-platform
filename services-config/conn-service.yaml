@@ -1,0 +1,9 @@
+service:
+  name: CONNECTION
+  id: DEV_CONNECTION_SERVICE
+platform:
+  address: nats://gnatsd:4222
+settings:
+  verbose_heartbeat: false
+  verbose_messaging: true
+  console_enabled: false

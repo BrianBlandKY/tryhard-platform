@@ -1,0 +1,13 @@
+version: '3'
+services:
+  gnatsd:
+    image: "apcera/gnatsd"
+    ports:
+      - "4222:4222"
+      - "8333:8333"
+  # development:
+  #   build: 
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     - /Users/bland/Development/Go/src/tryhard-platform:/src/tryhard-platform

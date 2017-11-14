@@ -1,9 +1,0 @@
-service:
-  name: TEST_CLIENT
-  id: TEST_CLIENT
-platform:
-  address: nats://localhost:4222
-settings:
-  verbose_heartbeat: true
-  verbose_messaging: true
-  console_enabled: false
