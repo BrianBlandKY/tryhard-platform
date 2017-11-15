@@ -1,0 +1,5 @@
+service:
+  name: SITUATION_SVC
+  id: SITUATION_SVC_01
+platform:
+  address: nats://gnatsd:4222

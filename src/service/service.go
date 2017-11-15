@@ -16,6 +16,7 @@ type Service interface {
 	Stop()
 	Request(cmd msg.Command, response *msg.Command) error
 	Reply(cmd msg.Command) error
+	Execute()
 }
 
 type service struct {
@@ -100,6 +101,10 @@ func (svc *service) Request(cmd msg.Command, response *msg.Command) error {
 // TODO: automatic retry?
 func (svc *service) Reply(cmd msg.Command) error {
 	return svc.messenger.Reply(cmd)
+}
+
+func (svc *service) Execute() {
+	panic("this should be overwritten from core service.")
 }
 
 func (svc *service) subscriptionWrapperRelay(ch chan<- msg.Command) {

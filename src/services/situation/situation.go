@@ -6,16 +6,13 @@ import (
 	str "strconv"
 )
 
-// static const boost::regex operandRegex("^(\\-?)(\\d+)?(\\d|\\.)?(\\d)+");
-// static const boost::regex operatorRegex("(\\+|\\-|\\(|\\)|/|\\*|x|\\^)");
-
 type Situation interface {
 	Parse(equation string)
-	Generate(operandCnt, operandLengthMin, operandLengthMax int, operations string)
+	Generate(operandCnt, operandLengthMin, operandLengthMax int, operations ...string)
 	SetCategories(categories []string)
 	GetCategories() []string
 	GetSource() string
-	GetEquation() string
+	GetProblem() string
 	GetSolution() float64
 }
 
@@ -23,10 +20,11 @@ type situation struct {
 	root          Node
 	categories    []string
 	source        string
-	equation      string
+	problem       string
 	solution      float64
 	operandRegEx  *reg.Regexp
 	operatorRegEx *reg.Regexp
+	generator     Generator
 }
 
 func (s *situation) operandCheck(value string) bool {
@@ -45,7 +43,7 @@ func (s *situation) solve(pos Node) float64 {
 	if pos.GetNodeType() == OPERAND {
 		value, err := str.ParseFloat(pos.GetText(), 32)
 		if err != nil {
-			panic(fmt.Sprintf("failed to convert %v to float \n", value))
+			panic(fmt.Sprintf("err: %v", err))
 		}
 		return value
 	}
@@ -83,126 +81,115 @@ func (s *situation) build(pos Node) string {
 		s.build(pos.GetRight()))
 }
 
-// TODO
 func (s *situation) buildTree(posNode, operandNode, operatorNode Node) Node {
-	// build from source
-	//  if(!position){
-	// 	if(!operandNode && !operatorNode){
-	// 		return new MathNode(NodeType::Operand, "0");
-	// 	}
-	// 	else if(operandNode && !operatorNode){
-	// 		position = operandNode;
-	// 	}
-	// 	else{
-	// 		operatorNode->setLeft(operandNode);
-	// 		operandNode->setParent(operatorNode);
-	// 		MathNode* placeholder = nullptr;
-	// 		if(operatorNode->getText() == "+" || operatorNode->getText() == "-"){
-	// 			placeholder = new MathNode(operatorNode, NodeType::Operand, "0");
-	// 		}
-	// 		else{
-	// 			placeholder = new MathNode(operatorNode, NodeType::Operand, "1");
-	// 		}
-	// 		placeholder->setPlaceholder(true);
-	// 		operatorNode->setRight(placeholder);
-	// 		position = operatorNode;
-	// 	}
-	// }
-	// else{
-	// 	if(position->getRight()->getPlaceholder() && !operatorNode){
-	// 		position->setRight(operandNode);
-	// 		operandNode->setParent(position);
-	// 		position->setPlaceholder(false);
-	// 	}
-	// 	else if(position->getRight()->getPlaceholder() && operatorNode){
-	// 		MathNode* placeholder = nullptr;
-	// 		if(operatorNode->getText() == "+" || operatorNode->getText() == "-"){
-	// 			placeholder = new MathNode(operatorNode, NodeType::Operand, "0");
-	// 			placeholder->setPlaceholder(true);
-	// 			position->setRight(operandNode);
-	// 			operandNode->setParent(position);
-	// 			operatorNode->setRight(placeholder);
-	// 			operatorNode->setLeft(position);
-	// 			position->setParent(operatorNode);
-	// 			return operatorNode;
-	// 		}
-	// 		else{
-	// 			placeholder = new MathNode(operatorNode, NodeType::Operand, "1");
-	// 		}
-	// 	}
-	// 	else{
-
-	// 	}
-	// }
-	// return position;
+	if posNode == nil {
+		if operandNode == nil && operatorNode == nil {
+			// What is this for?
+			return BuildNode(nil, OPERAND, "0")
+		} else if operandNode != nil && operatorNode == nil {
+			posNode = operandNode
+		} else {
+			operatorNode.SetLeft(operandNode)
+			operandNode.SetParent(operatorNode)
+			var placeholder Node
+			if operatorNode.GetText() == "+" || operatorNode.GetText() == "-" {
+				// Why is text "0"?
+				placeholder = BuildNode(operatorNode, OPERAND, "0")
+			} else {
+				// Why is text "1"?
+				placeholder = BuildNode(operatorNode, OPERAND, "1")
+			}
+			placeholder.SetPlaceholder(true)
+			operatorNode.SetRight(placeholder)
+			posNode = operatorNode
+		}
+	} else {
+		if posNode.GetRight().GetPlaceholder() && operatorNode == nil {
+			posNode.SetRight(operandNode)
+			operandNode.SetParent(posNode)
+			posNode.SetPlaceholder(false)
+		} else if posNode.GetRight().GetPlaceholder() && operatorNode != nil {
+			var placeholder Node
+			if operatorNode.GetText() == "+" || operatorNode.GetText() == "-" {
+				placeholder = BuildNode(operatorNode, OPERAND, "0")
+				placeholder.SetPlaceholder(true)
+				posNode.SetRight(operatorNode)
+				operandNode.SetParent(posNode)
+				operatorNode.SetRight(placeholder)
+				operatorNode.SetLeft(posNode)
+				posNode.SetParent(operatorNode)
+				return operatorNode
+			}
+			// What do we do with this guy?
+			placeholder = BuildNode(operatorNode, OPERAND, "1")
+		} else {
+			// more?
+		}
+	}
+	return posNode
 }
 
-// TODO
-func (s *situation) Parse(equation string) {
-	// this->equation = equation;
+func (s *situation) Parse(problem string) {
+	s.problem = problem
+	operand := "0"
+	var charIdx string
+	for i := 0; i < len(s.problem); i++ {
+		charIdx = string(s.problem[i])
 
-	// string operand = "0";
-	// for(int i=0; i<(int)equation.length(); i++){
-	// 	char charIndex = equation[i];
+		if charIdx == " " {
+			continue
+		}
 
-	// 	if(charIndex == ' '){
-	// 		continue;
-	// 	}
+		tempOperand := operand
+		tempOperand += charIdx
 
-	// 	string tempOperand = operand;
-	// 	tempOperand.push_back(charIndex);
-
-	// 	if(operandCheck(tempOperand)){
-	// 		operand.push_back(charIndex);
-	// 		if(i == (int)equation.length()-1){
-	// 			MathNode* operandNode = new MathNode(NodeType::Operand, operand);
-	// 			this->root = buildTree(this->root, operandNode, nullptr);
-	// 		}
-	// 		else
-	// 			continue;
-	// 	}
-	// 	else if(operatorCheck(charIndex)){
-	// 		if(i == 0){
-	// 			// leading character is operator
-	// 			if(charIndex != '-'){
-	// 				// ignore all leading operators not satisfied
-	// 				continue;
-	// 			}
-	// 		}
-	// 		MathNode* operandNode = new MathNode(NodeType::Operand, operand);
-	// 		MathNode* operatorNode = new MathNode(NodeType::Operator, charIndex);
-	// 		this->root = buildTree(this->root, operandNode, operatorNode);
-	// 		operand = "0";
-	// 	}
-	// }
-	// this->equation = this->buildEquation(this->root);
-	// this->solution = this->solve(this->root);
+		if s.operandCheck(tempOperand) {
+			tempOperand += charIdx
+			if i == len(s.problem)-1 {
+				operandNode := BuildNode(nil, OPERAND, operand)
+				s.root = s.buildTree(s.root, operandNode, nil)
+			} else {
+				continue
+			}
+		} else if s.operatorCheck(charIdx) {
+			if i == 0 {
+				// the leading character is operator
+				if charIdx != "-" {
+					// ignore all other leading operators
+					continue
+				}
+			}
+			operandNode := BuildNode(nil, OPERAND, operand)
+			operatorNode := BuildNode(nil, OPERATOR, charIdx)
+			s.root = s.buildTree(s.root, operandNode, operatorNode)
+			operand = "0"
+		}
+		s.problem = s.build(s.root)
+		s.solution = s.solve(s.root)
+	}
 }
 
-// TODO
-func (s *situation) Generate(operandCnt, operandMinLength, operandMaxLength int, operations string) {
-	// if(this->root){
-	// 	delete this->root;
-	// 	this->root = nullptr;
-	// }
+func (s *situation) Generate(operandCnt, operandMinLength, operandMaxLength int, operations ...string) {
+	if s.root != nil {
+		s.root = nil
+	}
 
-	// for(int i = 0; i < operandCount; i++){
-	// 	if (i == operandCount-1){
-	// 		string operand_str = Generator::operand(operandLengthMin, operandLengthMax);
-	// 		MathNode* operandNode = new MathNode(NodeType::Operand, operand_str);
-	// 		this->root = this->buildTree(this->root, operandNode, nullptr);
-	// 	}
-	// 	else{
-	// 		int op_index = rand() % operations.length();
-	// 		char op = operations[op_index];
-	// 		string operand_str = Generator::operand(operandLengthMin, operandLengthMax);
-	// 		MathNode* operandNode = new MathNode(NodeType::Operand, operand_str);
-	// 		MathNode* operatorNode = new MathNode(NodeType::Operator, op);
-	// 		this->root = this->buildTree(this->root, operandNode, operatorNode);
-	// 	}
-	// }
-	// this->equation = this->buildEquation(this->root);
-	// this->solution = this->solve(this->root);
+	for i := 0; i < operandCnt; i++ {
+		if i == operandCnt-1 {
+			// ?
+			operandStr := s.generator.Operand(operandMinLength, operandMaxLength)
+			operandNode := BuildNode(nil, OPERAND, operandStr)
+			s.root = s.buildTree(s.root, operandNode, nil)
+		} else {
+			operator := s.generator.Operator(operations...)
+			operand := s.generator.Operand(operandMinLength, operandMaxLength)
+			operandNode := BuildNode(nil, OPERAND, operand)
+			operatorNode := BuildNode(nil, OPERATOR, operator)
+			s.root = s.buildTree(s.root, operandNode, operatorNode)
+		}
+		s.problem = s.build(s.root)
+		s.solution = s.solve(s.root)
+	}
 }
 
 func (s *situation) GetCategories() []string {
@@ -217,8 +204,8 @@ func (s *situation) GetSource() string {
 	return s.source
 }
 
-func (s *situation) GetEquation() string {
-	return s.equation
+func (s *situation) GetProblem() string {
+	return s.problem
 }
 
 func (s *situation) GetSolution() float64 {
@@ -229,5 +216,6 @@ func DefaultSituation() Situation {
 	return &situation{
 		operandRegEx:  reg.MustCompile(`^(\\-?)(\\d+)?(\\d|\\.)?(\\d)+`),
 		operatorRegEx: reg.MustCompile(`(\\+|\\-|\\(|\\)|/|\\*|x|\\^)`),
+		generator:     DefaultGenerator(),
 	}
 }

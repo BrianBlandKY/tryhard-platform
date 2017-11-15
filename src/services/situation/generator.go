@@ -9,38 +9,48 @@ import (
 
 type Generator interface {
 	Operand(operandMin, operandMax int) string
-	// OperandWithLeadingZero?
+	Operator(operators ...string) string
 }
 
 type generator struct {
+	rng *rand.Rand
 }
 
 /*
 	Operand
 	Generate an Operand (number) between the min and max settings.
 */
-func (g *generator) Operand(operatorMin, operatorMax int) string {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+func (g *generator) Operand(operandMin, operandMax int) string {
 	result := ""
+	length := 0
 
 	// get the length of generated number
-	length := r.Intn(operatorMax-operatorMin) + operatorMin
-	log.Printf("Operand Length: %v \r\n", length)
+	// TODO: Improve the min + max algorithm
+	if operandMax-operandMin == 0 {
+		length = g.rng.Intn(operandMax) + 1
+	} else {
+		length = operandMin + g.rng.Intn(operandMax-operandMin)
+	}
 
+	log.Println("Length:", length)
 	// generate random number
 	for i := 0; i < length; i++ {
-		n := r.Intn(9)
+		n := g.rng.Intn(9)
 		if length > 1 && i == 0 {
-			n = r.Intn(8) + 1 // prevent leading digit from being zero
+			n = g.rng.Intn(8) + 1 // prevent leading digit from being zero
 		}
-		log.Printf("Single Op: %v \r\n", n)
 		result = fmt.Sprintf("%v%v", result, n)
-		// result += ((char)(((int)'0')+(rand() % 9)));
 	}
-	log.Printf("Result: %v \r\n", result)
 	return result
 }
 
+func (g *generator) Operator(operators ...string) string {
+	idx := g.rng.Intn(len(operators))
+	return operators[idx]
+}
+
 func DefaultGenerator() Generator {
-	return &generator{}
+	return &generator{
+		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
+	}
 }

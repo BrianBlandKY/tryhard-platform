@@ -9,6 +9,14 @@ import (
 	nats "github.com/nats-io/go-nats"
 )
 
+const (
+	DISCONNECTED = Status(iota)
+	CONNECTED
+	CLOSED
+	RECONNECTING
+	CONNECTING
+)
+
 type natsDialect struct {
 	id     string
 	doneCh chan bool

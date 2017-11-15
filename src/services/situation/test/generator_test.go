@@ -6,7 +6,7 @@ import (
 	sit "tryhard-platform/src/services/situation"
 )
 
-func TestGenerator(t *testing.T) {
+func TestOperandGenerator(t *testing.T) {
 	gen := sit.DefaultGenerator()
 
 	for i := 0; i < 100; i++ {
@@ -26,4 +26,7 @@ func TestGenerator(t *testing.T) {
 			t.Fatalf("Invalid generator value %v range (99, 9999)", value)
 		}
 	}
+}
+
+func TestOperatorGenerator(t *testing.T) {
 }

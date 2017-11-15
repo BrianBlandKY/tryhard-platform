@@ -69,6 +69,10 @@ func (n *node) GetPlaceholder() bool {
 	return n.isPlaceholder
 }
 
-func BuildNode() Node {
-	return nil
+func BuildNode(parent Node, nodeType NodeType, text string) Node {
+	return &node{
+		parent:   parent,
+		nodeType: nodeType,
+		text:     text,
+	}
 }
