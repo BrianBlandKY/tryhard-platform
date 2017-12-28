@@ -3,13 +3,13 @@ package main
 import (
 	"os"
 	"tryhard-platform/src/config"
-	"tryhard-platform/src/services/situation"
+	svc "tryhard-platform/src/services/situation"
 )
 
 func main() {
 	configFile := os.Args[1]
 	cfg := config.ReadConfig(configFile)
 
-	s := situation.GetSituationService(cfg)
+	s := svc.GerSituationService(cfg)
 	s.Execute()
 }

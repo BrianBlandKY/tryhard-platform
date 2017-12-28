@@ -1,0 +1,62 @@
+FROM ubuntu:xenial
+
+ENV PATH $PATH:/usr/local/go/bin
+ENV GOROOT /usr/local/go
+ENV GOPATH /apps
+
+RUN apt-get update -y && \
+    apt-get install -y \
+    curl git wget g++ clang autoconf automake libtool \
+    autoconf-archive pkg-config libpng12-dev \
+    libjpeg8-dev libtiff5-dev zlib1g-dev \
+    libicu-dev libpango1.0-dev libcairo2-dev 
+
+RUN mkdir -p /home/local/include
+
+# Download source for Leptonica v1.74.4
+WORKDIR /tmp
+RUN wget https://github.com/DanBloomberg/leptonica/releases/download/1.74.4/leptonica-1.74.4.tar.gz && \
+    tar -xzf leptonica-1.74.4.tar.gz && \
+    mv leptonica-1.74.4 /usr/local/src
+
+# Download source for tesseract
+WORKDIR /tmp
+RUN wget https://github.com/tesseract-ocr/tesseract/archive/3.05.01.tar.gz && \
+    tar -zxf 3.05.01.tar.gz && \
+    mv tesseract-3.05.01 /usr/local/src
+
+# Build Leptonica
+WORKDIR /usr/local/src/leptonica-1.74.4
+RUN ./configure && \
+    make && \
+    make install
+
+# Build Tesseract (from master branch)
+WORKDIR /usr/local/src/
+RUN git clone https://github.com/tesseract-ocr/tesseract.git
+WORKDIR /usr/local/src/tesseract
+RUN ./autogen.sh && \
+    ./configure && \
+    make && \
+    make install && \
+    ldconfig
+
+# Cleanup tmp
+RUN rm -R /tmp/*
+
+# Install 
+# Add go-wrapper
+RUN curl -O https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz && \
+    tar -xvf go1.8.linux-amd64.tar.gz && \
+    mv go /usr/local
+
+WORKDIR /apps
+# THIS FAILS >> Support latest leptonica\tesseract?
+RUN go get github.com/otiai10/gosseract
+
+# Service
+# VOLUME /apps
+# WORKDIR /apps
+
+# docker build . -t th-tess -f Dockerfile-tesseract 
+ENTRYPOINT ["tail", "-f", "/dev/null"]

@@ -15,11 +15,11 @@ settings:
 server:
   status: false
   open: false
-  host: localhost
   port: 5001
+  host: localhost
 schema:
-- name: service-iv
-  path: /src/tryhard-platform/src/services/service-iv
+- name: service-situation
+  path: /src/tryhard-platform/src/services/situation
   commands:
     install:
       status: true
@@ -27,10 +27,10 @@ schema:
       status: true
     run: true
   args:
-  - ./services-config/conn-service.yaml
+  - ./services-config/situation-service.yaml
   watcher:
     paths:
-    - /
+    - /src/tryhard-platform/src/services/situation
     extensions:
     - go
     scripts:
@@ -39,4 +39,26 @@ schema:
     - type: before
       command: go-wrapper install
     - type: after
-      command: mv service-iv ../../../bin
+      command: mv situation ../../../bin
+- name: service-da-vinci
+  path: /src/tryhard-platform/src/services/da-vinci
+  commands:
+    install:
+      status: true
+    build:
+      status: true
+    run: true
+  args:
+  - ./services-config/da-vinci-service.yaml
+  watcher:
+    paths:
+    - /src/tryhard-platform/src/services/da-vinci
+    extensions:
+    - go
+    scripts:
+    - type: before
+      command: go-wrapper download
+    - type: before
+      command: go-wrapper install
+    - type: after
+      command: mv da-vinci ../../../bin

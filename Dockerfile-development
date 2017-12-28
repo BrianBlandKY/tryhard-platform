@@ -1,0 +1,26 @@
+# GOAL
+# To build a development environment managed entirely within docker.
+# Similar to Python (virtualenv) and vagrant
+
+# Concerns: host IDE is going to eat shit when searching for dependencies locally.
+
+FROM golang:latest
+VOLUME /go/src/tryhard-platform
+
+ENV GOPATH /go:/
+ENV GOBIN /go/bin
+ENV PATH $PATH:/go/bin
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr
+
+# Versions
+# Leptonica 1.74.1
+# Tesseract 3.04.01
+RUN apt-get update -qq && \
+    apt-get install -y -qq libtesseract-dev libleptonica-dev && \
+    apt-get install -y -qq tesseract-ocr-eng
+
+WORKDIR /src/tryhard-platform
+RUN go get github.com/tockins/realize
+
+# ENTRYPOINT ["realize", "start"]
+CMD bash -c "realize start > logs/docker.log 2>&1"

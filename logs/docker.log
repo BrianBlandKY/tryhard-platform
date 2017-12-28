@@ -1,31 +1,27 @@
-[04:22:45][SERVICE-IV] : Watching 2 file/s 1 folder/s
-[04:22:48][SERVICE-IV] : Installing...
-[04:22:48][SERVICE-IV] : Installed in 0.157 s
-[04:22:48][SERVICE-IV] : Building...
-[04:22:49][SERVICE-IV] : Built in 0.540 s
-[04:22:49][SERVICE-IV] : Running..
-[04:22:49][SERVICE-IV] : Started in 0.001 s
-[04:22:49][SERVICE-IV] : 2017/11/11 04:22:49 
-[04:22:49][SERVICE-IV] :  settings:
-[04:22:49][SERVICE-IV] :   verbose_heartbeat: false
-[04:22:49][SERVICE-IV] :   verbose_messaging: true
-[04:22:49][SERVICE-IV] :   console_enabled: false
-[04:22:49][SERVICE-IV] : service:
-[04:22:49][SERVICE-IV] :   name: CONNECTION
-[04:22:49][SERVICE-IV] :   id: DEV_CONNECTION_SERVICE
-[04:22:49][SERVICE-IV] : platform:
-[04:22:49][SERVICE-IV] :   address: nats://gnatsd:4222
-[04:22:49][SERVICE-IV] :  
-[04:22:49][SERVICE-IV] : 2017/11/11 04:22:49 CONNECTION Connecting to nats://gnatsd:4222
-[04:22:49][SERVICE-IV] : 2017/11/11 04:22:49 CONNECTION Connected to nats://gnatsd:4222
-[04:22:49][SERVICE-IV] : 2017/11/11 04:22:49 CONNECTION Service Processor Running...
-[04:22:49][SERVICE-IV] : 2017/11/11 04:22:49 CONNECTION Service Listener Running...
-[04:22:49][SERVICE-IV] : 2017/11/11 04:22:49 Service Handler
-[04:22:49][SERVICE-IV] : 2017/11/11 04:22:49 Service Processor
-[04:22:50][SERVICE-IV] : 2017/11/11 04:22:50 CONNECTION New connection established {CONNECTION CONNECT _INBOX.CweOWCxzhV43f21nUzvUnI.CweOWCxzhV43f21nUzvUon [123 34 105 100 34 58 34 68 69 86 95 67 79 78 78 69 67 84 73 79 78 95 83 69 82 86 73 67 69 34 44 34 110 97 109 101 34 58 34 67 79 78 78 69 67 84 73 79 78 34 44 34 115 116 97 116 117 115 34 58 48 125]}
-[04:23:53][SERVICE-IV] : 2017/11/11 04:23:53 CONNECTION New connection established {CONNECTION CONNECT _INBOX.JhJGSEFXhS1wEmc1L4RtCl.JhJGSEFXhS1wEmc1L4RtGl [123 34 105 100 34 58 34 84 69 83 84 95 67 76 73 69 78 84 34 44 34 110 97 109 101 34 58 34 84 69 83 84 95 67 76 73 69 78 84 34 44 34 115 116 97 116 117 115 34 58 48 125]}
-[04:28:26][SERVICE-IV] : 2017/11/11 04:28:26 CONNECTION New connection established {CONNECTION CONNECT _INBOX.G2uhfisKvELdWbNTMqPM9q.G2uhfisKvELdWbNTMqPMEk [123 34 105 100 34 58 34 84 69 83 84 95 67 76 73 69 78 84 34 44 34 110 97 109 101 34 58 34 84 69 83 84 95 67 76 73 69 78 84 34 44 34 115 116 97 116 117 115 34 58 48 125]}
-[04:55:13][SERVICE-IV] : 2017/11/11 04:55:13 CONNECTION New connection established {CONNECTION CONNECT _INBOX.4b2FDRqh1B14oc6TY4WxHW.4b2FDRqh1B14oc6TY4WxKP [123 34 105 100 34 58 34 84 69 83 84 95 67 76 73 69 78 84 34 44 34 110 97 109 101 34 58 34 84 69 83 84 95 67 76 73 69 78 84 34 44 34 115 116 97 116 117 115 34 58 48 125]}
-[04:55:36][SERVICE-IV] : 2017/11/11 04:55:36 CONNECTION New connection established {CONNECTION CONNECT _INBOX.PDFmK8yYAgnINe9PFVe040.PDFmK8yYAgnINe9PFVe07U [123 34 105 100 34 58 34 84 69 83 84 95 67 76 73 69 78 84 34 44 34 110 97 109 101 34 58 34 84 69 83 84 95 67 76 73 69 78 84 34 44 34 115 116 97 116 117 115 34 58 48 125]}
-[04:59:38][SERVICE-IV] : 2017/11/11 04:59:38 CONNECTION New connection established {CONNECTION CONNECT _INBOX.Uud1KKhbHbmC8egDaUniG1.Uud1KKhbHbmC8egDaUniK6 [123 34 105 100 34 58 34 84 69 83 84 95 67 76 73 69 78 84 34 44 34 110 97 109 101 34 58 34 84 69 83 84 95 67 76 73 69 78 84 34 44 34 115 116 97 116 117 115 34 58 48 125]}
-[21:25:26][SERVICE-IV] : 2017/11/11 21:25:26 nats disconnected
+[00:41:03][SERVICE-DA-VINCI] : stat /src/tryhard-platform/src/services/da-vinci/src/tryhard-platform/src/services/da-vinci: no such file or directory
+[00:41:03][SERVICE-DA-VINCI] : Watching 0 file/s 0 folder/s
+[00:41:03][SERVICE-SITUATION] : stat /src/tryhard-platform/src/services/situation/src/tryhard-platform/src/services/situation: no such file or directory
+[00:41:03][SERVICE-SITUATION] : Watching 0 file/s 0 folder/s
+[00:41:03][SERVICE-DA-VINCI] : Command "go-wrapper download"
++ exec go get -v -d
+can't load package: package tryhard-platform/src/services/da-vinci: no Go files in /src/tryhard-platform/src/services/da-vinci
+
+[00:41:03][SERVICE-DA-VINCI] : Command "go-wrapper install"
++ exec go install -v
+can't load package: package tryhard-platform/src/services/da-vinci: no Go files in /src/tryhard-platform/src/services/da-vinci
+
+[00:41:03][SERVICE-DA-VINCI] : Installing...
+[00:41:03][SERVICE-DA-VINCI] : Install exit status 1
+can't load package: package tryhard-platform/src/services/da-vinci: no Go files in /src/tryhard-platform/src/services/da-vinci
+[00:41:03][SERVICE-DA-VINCI] : Building...
+[00:41:04][SERVICE-DA-VINCI] : Build exit status 1
+can't load package: package tryhard-platform/src/services/da-vinci: no Go files in /src/tryhard-platform/src/services/da-vinci
+[00:41:04][SERVICE-DA-VINCI] : Command "mv da-vinci ../../../bin"
+mv: cannot stat 'da-vinci': No such file or directory
+
+[00:41:06][SERVICE-SITUATION] : Installing...
+[00:41:06][SERVICE-SITUATION] : Installed in 0.179 s
+[00:41:06][SERVICE-SITUATION] : Building...
+[00:41:07][SERVICE-SITUATION] : Built in 0.193 s
+[00:41:07][SERVICE-SITUATION] : Running..
+[00:41:07][SERVICE-SITUATION] : Build not found
