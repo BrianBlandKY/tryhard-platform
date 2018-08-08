@@ -24,3 +24,5 @@ _testmain.go
 *.prof
 
 .DC_Store
+node_modules
+package-lock.json
